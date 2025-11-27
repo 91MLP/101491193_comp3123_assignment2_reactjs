@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=comp3123
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - app-network
+
+  # Mongo Express (Optional - for database management)
+  mongo-express:
+    image: mongo-express:latest
+    container_name: mongo-express
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=mongodb
+      - ME_CONFIG_MONGODB_PORT=27017
+      - ME_CONFIG_BASICAUTH_USERNAME=admin
+      - ME_CONFIG_BASICAUTH_PASSWORD=admin123
+    depends_on:
+      - mongodb
+    networks:
+      - app-network
+
+  # Backend API
+  backend:
+    build:
+      context: ../../COMP3123/COMP3123/Assignments/A1
+      dockerfile: Dockerfile
+    container_name: backend
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - DATABASE=mongodb://mongodb:27017/comp3123
+      - NODE_ENV=development
+    depends_on:
+      - mongodb
+    networks:
+      - app-network
+    volumes:
+      - ../../COMP3123/COMP3123/Assignments/A1:/app
+      - /app/node_modules
+
+  # Frontend React App
+  frontend:
+    build:
+      context: ./101491193_comp3123_assignment2_reactjs
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "3001:3001"
+    environment:
+      - REACT_APP_API_URL=http://localhost:3000
+      - PORT=3001
+    depends_on:
+      - backend
+    networks:
+      - app-network
+    volumes:
+      - ./101491193_comp3123_assignment2_reactjs:/app
+      - /app/node_modules
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mongo-data:
